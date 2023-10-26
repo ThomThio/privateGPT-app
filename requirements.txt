@@ -5,3 +5,4 @@ chromadb~=0.3.22
 streamlit~=1.27.2
 requests~=2.31.0
 urllib3~=1.26.6
+gunicorn==19.7.1
