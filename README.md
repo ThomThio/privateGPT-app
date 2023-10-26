@@ -39,6 +39,10 @@ __Developer plan__ will be needed to make sure there is enough memory for the ap
 
 ## Usage
 
+### Running FUll
+```
+gunicorn app:app -k uvicorn.workers.UvicornWorker --bind 127.0.0.1:8000 --timeout 1500 & streamlit run streamlit_app.py --server.address localhost```
+
 ### Running the FastAPI Backend
 
 To run the FastAPI backend, execute the following command:
