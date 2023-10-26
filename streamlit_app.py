@@ -30,8 +30,9 @@ def main():
 
     project_name = st.selectbox(label="project",options=["ai_story","general"])
     # collection_name = st.text_input("Collection Name") not working for some reason
+    collection_name = "ai_story"
     if st.button("Embed"):
-        embed_documents(files, project_name,"collection_name")
+        embed_documents(files, project_name,collection_name)
     
     # Query section
     st.header("Document Retrieval")
@@ -42,7 +43,10 @@ def main():
         if st.button("Retrieve"):
             retrieve_documents(query, selected_collection)
 
-def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name:str, collection_name:str):
+def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile],
+                    project_name:str,
+                    collection_name:str):
+
     endpoint = f"{API_BASE_URL}/embed"
 
     files_data = [("files", file) for file in files]
@@ -53,11 +57,10 @@ def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], p
     # request_data["files"].append({
     #     "filename": uploaded_file.filename,
     #     "content": base64_content
-    form_data =     {
+    form_data =  {
         "collection_name": collection_name,
         "project_name": project_name
-        # "collection_name": collection_name,
-                # "project_name":project_name
+
     }
     # })
 
@@ -65,7 +68,7 @@ def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], p
 
     # Send the POST request with JSON data
     # response = requests.post(endpoint, json=request_data)
-    response = requests.post(endpoint, data=form_data,files=files_data)
+    response = requests.post(endpoint, params=form_data,files=files_data)
 
     if response.status_code == 200:
         st.success("Documents embedded successfully!")
