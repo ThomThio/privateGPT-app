@@ -1,4 +1,6 @@
 python-dotenv~=1.0.0
+pydantic==1.10.13
+pydantic-core==2.10.1
 langchain~=0.0.166
 fastapi~=0.104.0
 chromadb~=0.3.22
