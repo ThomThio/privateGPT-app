@@ -21,7 +21,7 @@ model_type = os.environ.get('MODEL_TYPE')
 model_path = os.environ.get('MODEL_PATH')
 model_n_ctx = os.environ.get('MODEL_N_CTX')
 source_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents')
-ai_story_directory = os.environ.get('SOURCE_DIRECTORY', 'ai_story')
+ai_story_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents/ai_story')
 
 source_mapping = {
     'ai_story':ai_story_directory,
@@ -108,21 +108,26 @@ async def embed(
     print("Embed 2 ran")
     project_name = form_data.project_name
     collection_name = form_data.collection_name
+
+    os.makedirs(f"source_documents/{project_name}", exist_ok=True)
     saved_files = []
     # Save the files to the specified folder
     for file in files:
-        src_folder_path = source_mapping[project_name]
-        file_path = os.path.join(src_folder_path, file.filename)
-        saved_files.append(file_path)
+        try:
+            src_folder_path = source_mapping[project_name]
+            file_path = os.path.join(src_folder_path, file.filename)
+            saved_files.append(file_path)
 
-        with open(file_path, "wb") as f:
-            f.write(await file.read())
+            with open(file_path, "wb") as f:
+                f.write(await file.read())
+        except:
+            print("Error saving file")
 
-        if collection_name is None:
-            # Handle the case when the collection_name is not defined
-            collection_name = file.filename
+        # if collection_name is None:
+        #     # Handle the case when the collection_name is not defined
+        #     collection_name = file.filename
 
-    os.system(f'python ingest.py --collection {collection_name}')
+    os.system(f'python ingest.py --collection {collection_name} --project source_documents/{project_name}')
 
     # Delete the contents of the folder
     [os.remove(os.path.join(src_folder_path, file.filename)) or os.path.join(src_folder_path, file.filename) for file in

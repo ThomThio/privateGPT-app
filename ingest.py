@@ -69,10 +69,13 @@ def load_documents(source_dir: str) -> List[Document]:
     return [load_single_document(file_path) for file_path in all_files]
 
 
-def main(collection):
+def main(collection, project_name):
     # Load environment variables
-    persist_directory = os.environ.get('PERSIST_DIRECTORY')
-    source_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents')
+    source_directory = "source_documents/" + project_name
+    persist_directory = os.environ.get('PERSIST_DIRECTORY') + "/" + project_name
+
+    os.makedirs(persist_directory, exist_ok=True)
+
     embeddings_model_name = os.environ.get('EMBEDDINGS_MODEL_NAME')
     os.makedirs(source_directory, exist_ok=True)
     # Load documents and split in chunks
@@ -98,8 +101,9 @@ if __name__ == "__main__":
     # Create the argument parser
     parser = argparse.ArgumentParser()
     parser.add_argument("--collection", help="Saves the embedding in a collection name as specified")
+    parser.add_argument("--project", help="Saves under this folder instead of the default source_documents")
 
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    main(args.collection)
+    main(args.collection, args.project_name)

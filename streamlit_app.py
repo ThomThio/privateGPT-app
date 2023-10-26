@@ -31,6 +31,7 @@ def main():
     project_name = st.selectbox(label="project",options=["ai_story","general"])
     # collection_name = st.text_input("Collection Name") not working for some reason
     collection_name = "ai_story"
+
     if st.button("Embed"):
         embed_documents(files, project_name,collection_name)
     
@@ -50,20 +51,13 @@ def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile],
     endpoint = f"{API_BASE_URL}/embed"
 
     files_data = [("files", file) for file in files]
-    # file_content = uploaded_file.file.read()  # Read the file content
-    # base64_content = base64.b64encode(file_content).decode('utf-8')  # Convert to base64
 
-    # Add the processed file data to the request_data dictionary
-    # request_data["files"].append({
-    #     "filename": uploaded_file.filename,
-    #     "content": base64_content
     form_data =  {
         "collection_name": collection_name,
         "project_name": project_name
-
     }
-    # })
 
+    print(files_data)
     print(form_data)
 
     # Send the POST request with JSON data
