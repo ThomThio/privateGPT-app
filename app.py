@@ -5,8 +5,8 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.vectorstores import Chroma
 from langchain.llms import GPT4All, LlamaCpp
 import os
-from fastapi import FastAPI, UploadFile, File
-from typing import List, Optional
+from fastapi import FastAPI, UploadFile, File, Form, Body
+from typing import List, Optional, Annotated
 import urllib.parse
 
 app = FastAPI()
@@ -52,6 +52,9 @@ async def model_download():
             url = "https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin"
         case "GPT4All":
             url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
+        case "OpenAI":
+            url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
+
     folder = "models"
     parsed_url = urllib.parse.urlparse(url)
     filename = os.path.join(folder, os.path.basename(parsed_url.path))
@@ -81,29 +84,76 @@ async def startup_event():
 async def root():
     return {"message": "Hello, the APIs are now ready for your embeds and queries!"}
 
-@app.post("/embed")
-async def embed(files: List[UploadFile], project_name: str, collection_name: Optional[str] = None):
 
+@app.post("/files/")
+async def create_file(
+    file: Annotated[bytes, File()],
+    fileb: Annotated[UploadFile, File()],
+    token: Annotated[str, Form()],
+):
+    return {
+        "file_size": len(file),
+        "token": token,
+        "fileb_content_type": fileb.content_type,
+    }
+
+@app.post("/embed")
+async def embed(
+    files: Annotated[UploadFile, List[UploadFile]],
+    form_data: Annotated[str, Form()]
+):
+# async def embed2(project_name: str = Form(...), collection_name: str = Form(...), files: List[UploadFile] = Form(...)):
+        # return {"JSON Payload ": {"title": title, "text": text}, "Uploaded Files": files}
+    global source_mapping
+    print("Embed 2 ran")
+    project_name = form_data.project_name
+    collection_name = form_data.collection_name
     saved_files = []
     # Save the files to the specified folder
     for file in files:
         src_folder_path = source_mapping[project_name]
         file_path = os.path.join(src_folder_path, file.filename)
         saved_files.append(file_path)
-        
+
         with open(file_path, "wb") as f:
             f.write(await file.read())
-        
+
         if collection_name is None:
             # Handle the case when the collection_name is not defined
             collection_name = file.filename
-    
+
     os.system(f'python ingest.py --collection {collection_name}')
-    
+
     # Delete the contents of the folder
-    [os.remove(os.path.join(src_folder_path, file.filename)) or os.path.join(src_folder_path, file.filename) for file in files]
-    
+    [os.remove(os.path.join(src_folder_path, file.filename)) or os.path.join(src_folder_path, file.filename) for file in
+     files]
+
     return {"message": "Files embedded successfully", "saved_files": saved_files}
+
+# @app.post("/embed")
+# async def embed(files: List[UploadFile], collection_name: Optional[str] = None):
+#
+#     # print(project_name)
+#     saved_files = []
+#     # Save the files to the specified folder
+#     for file in files:
+#         src_folder_path = source_mapping["ai_story"]
+#         file_path = os.path.join(src_folder_path, file.filename)
+#         saved_files.append(file_path)
+#
+#         with open(file_path, "wb") as f:
+#             f.write(await file.read())
+#
+#         if collection_name is None:
+#             # Handle the case when the collection_name is not defined
+#             collection_name = file.filename
+#
+#     os.system(f'python ingest.py --collection {collection_name}')
+#
+#     # Delete the contents of the folder
+#     [os.remove(os.path.join(src_folder_path, file.filename)) or os.path.join(src_folder_path, file.filename) for file in files]
+#
+#     return {"message": "Files embedded successfully", "saved_files": saved_files}
 
 @app.post("/retrieve")
 async def query(query: str, collection_name:str):

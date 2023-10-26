@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+from langchain import OpenAI
 from langchain.chains import RetrievalQA
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -28,6 +29,9 @@ def main():
             llm = LlamaCpp(model_path=model_path, n_ctx=model_n_ctx, callbacks=callbacks, verbose=False)
         case "GPT4All":
             llm = GPT4All(model=model_path, n_ctx=model_n_ctx, backend='gptj', callbacks=callbacks, verbose=False)
+        case "OpenAI":
+            llm = OpenAI(model_name="text-davinci-003")
+
         case _default:
             print(f"Model {model_type} not supported!")
             exit;

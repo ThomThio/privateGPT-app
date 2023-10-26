@@ -1,0 +1,6 @@
+--2023-10-26 11:22:54--  https://gpt4all.io/models/ggml-model-gpt4all-falcon-q4_0.bin
+Resolving gpt4all.io (gpt4all.io)... 2606:4700:20::681a:19f, 2606:4700:20::681a:9f, 2606:4700:20::ac43:47a9, ...
+Connecting to gpt4all.io (gpt4all.io)|2606:4700:20::681a:19f|:443... connected.
+HTTP request sent, awaiting response... 404 Not Found
+2023-10-26 11:22:55 ERROR 404: Not Found.
+

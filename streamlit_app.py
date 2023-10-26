@@ -31,7 +31,7 @@ def main():
     project_name = st.selectbox(label="project",options=["ai_story","general"])
     # collection_name = st.text_input("Collection Name") not working for some reason
     if st.button("Embed"):
-        embed_documents(files, "collection_name",project_name)
+        embed_documents(files, project_name,"collection_name")
     
     # Query section
     st.header("Document Retrieval")
@@ -42,16 +42,36 @@ def main():
         if st.button("Retrieve"):
             retrieve_documents(query, selected_collection)
 
-def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name: str, collection_name:str):
+def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name:str, collection_name:str):
     endpoint = f"{API_BASE_URL}/embed"
-    files_data = [("files", file) for file in files]
-    data = {"collection_name": collection_name, 'project_name':project_name}
 
-    response = requests.post(endpoint, files=files_data, data=data)
+    files_data = [("files", file) for file in files]
+    # file_content = uploaded_file.file.read()  # Read the file content
+    # base64_content = base64.b64encode(file_content).decode('utf-8')  # Convert to base64
+
+    # Add the processed file data to the request_data dictionary
+    # request_data["files"].append({
+    #     "filename": uploaded_file.filename,
+    #     "content": base64_content
+    form_data =     {
+        "collection_name": collection_name,
+        "project_name": project_name
+        # "collection_name": collection_name,
+                # "project_name":project_name
+    }
+    # })
+
+    print(form_data)
+
+    # Send the POST request with JSON data
+    # response = requests.post(endpoint, json=request_data)
+    response = requests.post(endpoint, data=form_data,files=files_data)
+
     if response.status_code == 200:
         st.success("Documents embedded successfully!")
     else:
         st.error("Document embedding failed.")
+        print(response.text,response.status_code)
         st.write(response.text)
 
 
