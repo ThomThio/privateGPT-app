@@ -27,9 +27,11 @@ def main():
     # Document upload section
     st.header("Document Upload")
     files = st.file_uploader("Upload document", accept_multiple_files=True)
+
+    project_name = st.selectbox(label="project",options=["ai_story","general"])
     # collection_name = st.text_input("Collection Name") not working for some reason
     if st.button("Embed"):
-        embed_documents(files, "collection_name")
+        embed_documents(files, "collection_name",project_name)
     
     # Query section
     st.header("Document Retrieval")
@@ -40,10 +42,10 @@ def main():
         if st.button("Retrieve"):
             retrieve_documents(query, selected_collection)
 
-def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], collection_name:str):
+def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name: str, collection_name:str):
     endpoint = f"{API_BASE_URL}/embed"
     files_data = [("files", file) for file in files]
-    data = {"collection_name": collection_name}
+    data = {"collection_name": collection_name, 'project_name':project_name}
 
     response = requests.post(endpoint, files=files_data, data=data)
     if response.status_code == 200:

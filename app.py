@@ -21,23 +21,32 @@ model_type = os.environ.get('MODEL_TYPE')
 model_path = os.environ.get('MODEL_PATH')
 model_n_ctx = os.environ.get('MODEL_N_CTX')
 source_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents')
+ai_story_directory = os.environ.get('SOURCE_DIRECTORY', 'ai_story')
+
+source_mapping = {
+    'ai_story':ai_story_directory,
+    'general':source_directory
+}
+
 
 from constants import CHROMA_SETTINGS
 
 async def test_embedding():
-    # Create the folder if it doesn't exist
-    os.makedirs(source_directory, exist_ok=True)
-    # Create a sample.txt file in the source_documents directory
-    file_path = os.path.join("source_documents", "test.txt")
-    with open(file_path, "w") as file:
-        file.write("This is a test.")
-    # Run the ingest.py command
-    os.system('python ingest.py --collection test')
-    # Delete the sample.txt file
-    os.remove(file_path)
-    print("embeddings working")
+    for src_folder_path in source_mapping.keys():
+        # Create the folder if it doesn't exist
+        os.makedirs(src_folder_path, exist_ok=True)
+        # Create a sample.txt file in the source_documents directory
+        file_path = os.path.join(src_folder_path, "test.txt")
+        with open(file_path, "w") as file:
+            file.write("This is a test.")
+        # Run the ingest.py command
+        os.system('python ingest.py --collection test')
+        # Delete the sample.txt file
+        os.remove(file_path)
+        print("embeddings working")
 
 async def model_download():
+    url = None
     match model_type:
         case "LlamaCpp":
             url = "https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin"
@@ -73,12 +82,13 @@ async def root():
     return {"message": "Hello, the APIs are now ready for your embeds and queries!"}
 
 @app.post("/embed")
-async def embed(files: List[UploadFile], collection_name: Optional[str] = None):
+async def embed(files: List[UploadFile], project_name: str, collection_name: Optional[str] = None):
 
     saved_files = []
     # Save the files to the specified folder
     for file in files:
-        file_path = os.path.join(source_directory, file.filename)
+        src_folder_path = source_mapping[project_name]
+        file_path = os.path.join(src_folder_path, file.filename)
         saved_files.append(file_path)
         
         with open(file_path, "wb") as f:
@@ -91,7 +101,7 @@ async def embed(files: List[UploadFile], collection_name: Optional[str] = None):
     os.system(f'python ingest.py --collection {collection_name}')
     
     # Delete the contents of the folder
-    [os.remove(os.path.join(source_directory, file.filename)) or os.path.join(source_directory, file.filename) for file in files]
+    [os.remove(os.path.join(src_folder_path, file.filename)) or os.path.join(src_folder_path, file.filename) for file in files]
     
     return {"message": "Files embedded successfully", "saved_files": saved_files}
 
