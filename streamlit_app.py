@@ -44,32 +44,22 @@ def main():
         if st.button("Retrieve"):
             retrieve_documents(query, selected_collection)
 
-def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile],
-                    project_name:str,
-                    collection_name:str):
-
+def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name:str,collection_name:str):
     endpoint = f"{API_BASE_URL}/embed"
-
     files_data = [("files", file) for file in files]
+    data = {"collection_name": collection_name,
+            # "project_name": project_name
+            }
 
-    form_data =  {
-        "collection_name": collection_name,
-        "project_name": project_name
-    }
-
-    print(files_data)
-    print(form_data)
-
-    # Send the POST request with JSON data
-    # response = requests.post(endpoint, json=request_data)
-    response = requests.post(endpoint, params=form_data,files=files_data)
-
+    print("Calling API...")
+    response = requests.post(endpoint, files=files_data, json=data)
     if response.status_code == 200:
         st.success("Documents embedded successfully!")
     else:
         st.error("Document embedding failed.")
-        print(response.text,response.status_code)
         st.write(response.text)
+
+    print("Completed")
 
 
 def get_collection_names():
