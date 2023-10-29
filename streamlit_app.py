@@ -45,14 +45,14 @@ def main():
             retrieve_documents(query, selected_collection)
 
 def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], project_name:str,collection_name:str):
-    endpoint = f"{API_BASE_URL}/embed"
+    endpoint = f"{API_BASE_URL}/embed2"
     files_data = [("files", file) for file in files]
     data = {"collection_name": collection_name,
-            # "project_name": project_name
+            "project_name": project_name
             }
 
     print("Calling API...")
-    response = requests.post(endpoint, files=files_data, json=data)
+    response = requests.post(endpoint, files=files_data, data=data)
     if response.status_code == 200:
         st.success("Documents embedded successfully!")
     else:

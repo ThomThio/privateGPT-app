@@ -1,17 +1,8 @@
-from dotenv import load_dotenv
-from langchain.chains import RetrievalQA
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.vectorstores import Chroma
-from langchain.llms import GPT4All, LlamaCpp
+from flask import Flask, request, jsonify
 import os
-from typing import List, Optional, Annotated
 import urllib.parse
-from flask import Flask, redirect, render_template, request, url_for
-import os
 
 app = Flask(__name__)
-
 
 load_dotenv()
 
@@ -23,7 +14,6 @@ model_path = os.environ.get('MODEL_PATH')
 model_n_ctx = os.environ.get('MODEL_N_CTX')
 source_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents')
 ai_story_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents/ai_story')
-
 
 from constants import CHROMA_SETTINGS
 
@@ -43,141 +33,140 @@ def test_embedding():
 
 def model_download():
     url = None
-    match model_type:
-        case "LlamaCpp":
-            url = "https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin"
-        case "GPT4All":
-            url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
-        case "OpenAI":
-            url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
+    if model_type == "LlamaCpp":
+        url = "https://gpt4all.io/models/ggml-gpt4all-l13b-snoozy.bin"
+    elif model_type == "GPT4All":
+        url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
+    elif model_type == "OpenAI":
+        url = "https://gpt4all.io/models/ggml-gpt4all-j-v1.3-groovy.bin"
 
     folder = "models"
     parsed_url = urllib.parse.urlparse(url)
     filename = os.path.join(folder, os.path.basename(parsed_url.path))
     # Check if the file already exists
-    if os.path.exists(filename):
-        print("File already exists.")
-        return
-    # Create the folder if it doesn't exist
-    os.makedirs(folder, exist_ok=True)
-    # Run wget command to download the file
-    os.system(f"wget {url} -O {filename}")
-    global model_path 
-    model_path = filename
-    os.environ['MODEL_PATH'] = filename
-    print("model downloaded")
-    
+    if not os.path.exists(filename):
+        # Create the folder if it doesn't exist
+        os.makedirs(folder, exist_ok=True)
+        # Run wget command to download the file
+        os.system(f"wget {url} -O {filename}")
+        global model_path
+        model_path = filename
+        os.environ['MODEL_PATH'] = filename
+        print("model downloaded")
 
 # Starting the app with embedding and llm download
-@app.on_event("startup")
-def startup_event():
+@app.before_first_request
+def before_first_request():
     test_embedding()
     model_download()
 
-
 # Example route
-@app.get("/")
+@app.route("/")
 def root():
     return {"message": "Hello, the APIs are now ready for your embeds and queries!"}
 
+@app.route("/files/", methods=["POST"])
+def create_file():
+    try:
+        files = request.files.getlist("file")
+        for file in files:
+            insert_file(file)
+        return jsonify({"message": "Files inserted successfully"}), 200
+    except Exception as e:
+        print("exception", e)
+        return "Something went wrong", 500
 
-@app.post("/files/")
-def create_file(
-    file: Annotated[bytes, File()],
-    fileb: Annotated[UploadFile, File()],
-    token: Annotated[str, Form()],
-):
-    return {
-        "file_size": len(file),
-        "token": token,
-        "fileb_content_type": fileb.content_type,
-    }
+def insert_file(file):
+    # Your file processing logic here
+    pass
 
-@app.post("/embed2")
-async def embed2(
-    files: List[UploadFile],
-    collection_name: Optional[str] = Form(),
-    project_name: Optional[str] = Form(),
-):
-    print("Running embed api")
-    # print("Embed 2 ran")
+@app.route("/embed2", methods=["POST"])
+def embed2():
+    try:
+        files = request.files.getlist("files")
+        collection_name = request.form.get("collection_name")
+        project_name = request.form.get("project_name")
+        save_path = f"source_documents/{project_name}"
+        saved_files = []
 
-    save_path =f"source_documents/{project_name}"
+        for file in files:
+            try:
+                file_path = os.path.join(save_path, file.filename)
+                saved_files.append(file_path)
+                with open(file_path, "wb") as f:
+                    f.write(file.read())
+            except:
+                print("Error saving file")
 
-    saved_files = []
-    # Save the files to the specified folder
-    for file in files:
-        try:
-            file_path = os.path.join(save_path, file.filename)
-            print(file_path)
+            if collection_name is None:
+                collection_name = file.filename
+
+        os.system(f'python ingest.py --collection {collection_name} --project source_documents/{project_name}')
+
+        # Delete the contents of the folder
+        [os.remove(os.path.join(save_path, file.filename)) or os.path.join(save_path, file.filename) for file in files]
+
+        return jsonify({"message": "Files embedded successfully", "saved_files": saved_files}), 200
+    except Exception as e:
+        print("exception", e)
+        return "Something went wrong", 500
+
+@app.route("/embed", methods=["POST"])
+def embed():
+    try:
+        files = request.files.getlist("files")
+        collection_name = request.form.get("collection_name")
+        saved_files = []
+
+        for file in files:
+            file_path = os.path.join(source_directory, file.filename)
             saved_files.append(file_path)
 
             with open(file_path, "wb") as f:
                 f.write(file.read())
-        except:
-            print("Error saving file")
 
-        if collection_name is None:
-            # Handle the case when the collection_name is not defined
-            collection_name = file.filename
+            if collection_name is None:
+                collection_name = file.filename
 
-    os.system(f'python ingest.py --collection {collection_name} --project source_documents/{project_name}')
+        os.system(f'python ingest.py --collection {collection_name}')
 
-    # Delete the contents of the folder
-    [os.remove(os.path.join(save_path, file.filename)) or os.path.join(save_path, file.filename) for file in
-     files]
+        # Delete the contents of the folder
+        [os.remove(os.path.join(source_directory, file.filename)) or os.path.join(source_directory, file.filename) for file
+         in files]
 
-    return {"message": "Files embedded successfully", "saved_files": saved_files}
+        return jsonify({"message": "Files embedded successfully", "saved_files": saved_files}), 200
+    except Exception as e:
+        print("exception", e)
+        return "Something went wrong", 500
 
+@app.route("/retrieve", methods=["POST"])
+def query():
+    try:
+        query_text = request.form.get("query")
+        collection_name = request.form.get("collection_name")
+        embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name)
+        db = Chroma(persist_directory=persist_directory, collection_name=collection_name, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
+        retriever = db.as_retriever()
 
-@app.post("/embed")
-async def embed(files: List[UploadFile], collection_name: Optional[str] = None):
-    # collection_name = data.collection_name
-    # project_name = data.collection_name
-    print("running embed1")
-    saved_files = []
-    # Save the files to the specified folder
-    for file in files:
-        file_path = os.path.join(source_directory, file.filename)
-        saved_files.append(file_path)
+        callbacks = [StreamingStdOutCallbackHandler()]
 
-        with open(file_path, "wb") as f:
-            f.write(file.read())
-
-        if collection_name is None:
-            # Handle the case when the collection_name is not defined
-            collection_name = file.filename
-
-    os.system(f'python ingest.py --collection {collection_name}')
-
-    # Delete the contents of the folder
-    [os.remove(os.path.join(source_directory, file.filename)) or os.path.join(source_directory, file.filename) for file
-     in files]
-
-    return {"message": "Files embedded successfully", "saved_files": saved_files}
-
-@app.post("/retrieve")
-def query(query: str, collection_name:str):
-    
-    embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name)
-    db = Chroma(persist_directory=persist_directory,collection_name=collection_name, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
-    retriever = db.as_retriever()
-    # Prepare the LLM
-    callbacks = [StreamingStdOutCallbackHandler()]
-    match model_type:
-        case "LlamaCpp":
+        if model_type == "LlamaCpp":
             llm = LlamaCpp(model_path=model_path, n_ctx=model_n_ctx, callbacks=callbacks, verbose=False)
-        case "GPT4All":
+        elif model_type == "GPT4All":
             llm = GPT4All(model=model_path, n_ctx=model_n_ctx, backend='gptj', callbacks=callbacks, verbose=False)
-        case _default:
+        else:
             print(f"Model {model_type} not supported!")
-            exit;
-    qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
-    
-    # Get the answer from the chain
-    res = qa(query)
-    print(res)   
-    answer, docs = res['result'], res['source_documents']
+            return "Model not supported", 400
 
+        qa = RetrievalQA.from_chain_type(llm=llm, chain_type="stuff", retriever=retriever, return_source_documents=True)
 
-    return {"results": answer, "docs":docs}
+        res = qa(query_text)
+        answer, docs = res['result'], res['source_documents']
+
+        return jsonify({"results": answer, "docs": docs}), 200
+    except Exception as e:
+        print("exception", e)
+        return "Something went wrong", 500
+
+if __name__ == "__main__":
+    app.run()
