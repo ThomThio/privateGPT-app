@@ -106,4 +106,4 @@ if __name__ == "__main__":
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    main(args.collection, args.project_name)
+    main(args.collection, args.project)

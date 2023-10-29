@@ -109,7 +109,7 @@ def embed2():
             if collection_name is None:
                 collection_name = file.filename
 
-        os.system(f'python ingest.py --collection {collection_name} --project source_documents/{project_name}')
+        os.system(f'python ingest.py --collection {collection_name} --project {project_name}')
 
         # Delete the contents of the folder
         [os.remove(os.path.join(save_path, file.filename)) or os.path.join(save_path, file.filename) for file in files]
