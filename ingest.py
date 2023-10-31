@@ -72,7 +72,7 @@ def load_documents(source_dir: str) -> List[Document]:
 def main(collection, project_name):
     # Load environment variables
     source_directory = "source_documents/" + project_name
-    persist_directory = os.environ.get('PERSIST_DIRECTORY') + "/" + project_name
+    persist_directory = os.environ.get('PERSIST_DIRECTORY') + "/" + collection
 
     os.makedirs(persist_directory, exist_ok=True)
 

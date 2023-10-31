@@ -12,13 +12,13 @@ persist_directory = os.environ.get('PERSIST_DIRECTORY')
 model_type = os.environ.get('MODEL_TYPE')
 model_path = os.environ.get('MODEL_PATH')
 model_n_ctx = os.environ.get('MODEL_N_CTX')
-source_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents')
-ai_story_directory = os.environ.get('SOURCE_DIRECTORY', 'source_documents/ai_story')
+source_directory = os.environ.get('SOURCE_DIRECTORY', '../source_documents')
+ai_story_directory = os.environ.get('SOURCE_DIRECTORY', '../source_documents/ai_story')
 
 from constants import CHROMA_SETTINGS
 
 def test_embedding():
-    src_folder_path = "source_documents"
+    src_folder_path = "../source_documents"
     # Create the folder if it doesn't exist
     os.makedirs(src_folder_path, exist_ok=True)
     # Create a sample.txt file in the source_documents directory

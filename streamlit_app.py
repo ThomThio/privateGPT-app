@@ -51,7 +51,6 @@ def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], p
             "project_name": project_name
             }
 
-    print("Calling API...")
     response = requests.post(endpoint, files=files_data, data=data)
     if response.status_code == 200:
         st.success("Documents embedded successfully!")
@@ -65,7 +64,9 @@ def embed_documents(files:List[st.runtime.uploaded_file_manager.UploadedFile], p
 def get_collection_names():
 
     collections = list_of_collections()
-    return [collection.name for collection in collections]
+    print(collections)
+    return ["ai_story","general"]
+    # return [collection.name for collection in collections]
 
 
 
@@ -73,11 +74,13 @@ def retrieve_documents(query: str, collection_name: str):
     endpoint = f"{API_BASE_URL}/retrieve"
     data = {"query": query, "collection_name": collection_name}
 
+    print(data)
+
     # Modify socket options for the HTTPConnection class
     HTTPConnection.default_socket_options = (
         HTTPConnection.default_socket_options + [
             (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
-            (socket.SOL_TCP, socket.TCP_KEEPIDLE, 45),
+            # (socket.SOL_TCP, socket.TCP_KEEPIDLE, 45),
             (socket.SOL_TCP, socket.TCP_KEEPINTVL, 10),
             (socket.SOL_TCP, socket.TCP_KEEPCNT, 6)
         ]

@@ -1,3 +1,4 @@
+import traceback
 import urllib.parse
 import os
 import urllib.parse
@@ -124,8 +125,10 @@ def query():
     try:
         query_text = request.form.get("query")
         collection_name = request.form.get("collection_name")
+
+        print(query_text,collection_name)
         embeddings = HuggingFaceEmbeddings(model_name=embeddings_model_name)
-        db = Chroma(persist_directory=persist_directory, collection_name=collection_name, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
+        db = Chroma(persist_directory=persist_directory+"/"+collection_name, embedding_function=embeddings, client_settings=CHROMA_SETTINGS)
         retriever = db.as_retriever()
 
         callbacks = [StreamingStdOutCallbackHandler()]
@@ -145,9 +148,14 @@ def query():
 
         return jsonify({"results": answer, "docs": docs}), 200
     except Exception as e:
+        traceback.print_exc()
         print("exception", e)
         return "Something went wrong", 500
 
+#to run before all else as replacement to app.before_first_request
+with app.app_context():
+    before_first_request()
+
 if __name__ == "__main__":
     app.run(debug=True,port=5601)
-    before_first_request()
+
